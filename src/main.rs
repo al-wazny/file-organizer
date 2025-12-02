@@ -1,5 +1,7 @@
 use clap::Parser;
 use std::fs::{self, ReadDir};
+use serde_json::Value;
+use std::env;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -24,9 +26,20 @@ fn get_dir_entries(entries: ReadDir) {
     }
 }
 
+fn get_config() -> Value {
+    const PROJECT_DIR: &str = env!("CARGO_MANIFEST_DIR");
+    let mut config_path = format!("{}/src/config.json", PROJECT_DIR);
+    config_path = fs::read_to_string(&config_path).unwrap();
+    
+    serde_json::from_str(&config_path).unwrap()
+}
+
 fn main() {
     let args = Cli::parse();
     let directory = fs::read_dir(args.path);
+    let config = get_config();
+   
+    println!("{:#}", config);
 
     match directory {
         Ok(_dir) => {
