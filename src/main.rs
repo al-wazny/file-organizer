@@ -18,12 +18,21 @@ struct Cli {
     backup: bool,
 }
 
-fn get_dir_entries(entries: ReadDir) {
+fn get_dir_entries(entries: ReadDir) -> Vec<String> {
+    let mut extensions = vec![];
+
     for entry in entries {
         if let Ok(_entry) = entry {
-            println!("{:?}", _entry.path());
+            let path = _entry.path();
+
+            if let Some(extension) = path.extension() {
+                println!("{:?}", extension);
+                extensions.push(extension.display().to_string());
+            }
         }
     }
+
+    extensions
 }
 
 fn get_config() -> Value {
@@ -34,12 +43,22 @@ fn get_config() -> Value {
     serde_json::from_str(&config_path).unwrap()
 }
 
+fn find_value(c: &Value, target: &Value) -> bool {
+    match c {
+        Value::Array(arr) => arr.iter().any(|item| find_value(item, target)),
+        Value::Object(obj) => obj.values().any(|item| find_value(item, target)),
+        _ => c == target,
+    }
+}
+
 fn main() {
     let args = Cli::parse();
     let directory = fs::read_dir(args.path);
     let config = get_config();
    
     println!("{:#}", config);
+    // check if a given file extension has a path configured
+    println!("{}", find_value(&config, &Value::String("bar".into())));
 
     match directory {
         Ok(_dir) => {
