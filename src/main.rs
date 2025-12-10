@@ -2,6 +2,7 @@ use clap::Parser;
 use std::fs::{self, ReadDir};
 use serde_json::Value;
 use std::env;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -42,7 +43,7 @@ fn get_config() -> Value {
     serde_json::from_str(&config_path).unwrap()
 }
 
-// search json recursively and return configured path if target is set inside config.json
+// search json recursively and return configured path if given target is set inside config.json
 fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<String> {
     match json {
         Value::Array(arr) => {
@@ -79,17 +80,17 @@ fn main() {
     let extension = "foo";
     let searched_extension = Value::String(extension.to_string());
 
-    println!("{:#?}", config);
     if let Some(path) = get_configured_path(&config, &searched_extension, "".into()) {
-        println!("{}/", path);
+        let path_buf: PathBuf = PathBuf::from(&path);
+
+        println!("{:#?}", config);
+        println!("{}", path_buf.display());
     } else {
         todo!("handle files with non configured extensions")
     }
 
     match directory {
-        Ok(_dir) => {
-            get_dir_entries(_dir);
-        }
+        Ok(_dir) => { get_dir_entries(_dir); }
         Err(e) => { println!("Error opening directory: {}", e); }
     }
 }
