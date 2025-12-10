@@ -19,10 +19,12 @@ struct Cli {
     backup: bool,
 }
 
+
 fn get_dir_entries(entries: ReadDir) -> Vec<String> {
     let mut extensions = vec![];
 
     for entry in entries {
+
         if let Ok(_entry) = entry {
             let path = _entry.path();
 
@@ -35,6 +37,7 @@ fn get_dir_entries(entries: ReadDir) -> Vec<String> {
     extensions
 }
 
+
 fn get_config() -> Value {
     const PROJECT_DIR: &str = env!("CARGO_MANIFEST_DIR");
     let mut config_path = format!("{}/src/config.json", PROJECT_DIR);
@@ -42,6 +45,7 @@ fn get_config() -> Value {
     
     serde_json::from_str(&config_path).unwrap()
 }
+
 
 // search json recursively and return configured path if given target is set inside config.json
 fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<String> {
@@ -72,6 +76,16 @@ fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<Str
     }
 }
 
+
+fn get_absolute_path(rel_path: &String) -> PathBuf {
+    let relative = PathBuf::from(rel_path);
+    // (fix) this returns the absolutepath of project directory
+    // (todo) get absolute path to user space
+    let current_dir = env::current_dir().unwrap();
+    current_dir.join(&relative) 
+}
+
+
 fn main() {
     let args = Cli::parse();
     let directory = fs::read_dir(args.path);
@@ -81,7 +95,7 @@ fn main() {
     let searched_extension = Value::String(extension.to_string());
 
     if let Some(path) = get_configured_path(&config, &searched_extension, "".into()) {
-        let path_buf: PathBuf = PathBuf::from(&path);
+        let path_buf: PathBuf = get_absolute_path(&path);
 
         println!("{:#?}", config);
         println!("{}", path_buf.display());
