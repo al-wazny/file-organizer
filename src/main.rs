@@ -42,6 +42,7 @@ fn get_config() -> Value {
     serde_json::from_str(&config_path).unwrap()
 }
 
+// search json recursively and return configured path if target is set inside config.json
 fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<String> {
     match json {
         Value::Array(arr) => {
@@ -75,11 +76,14 @@ fn main() {
     let directory = fs::read_dir(args.path);
     let config = get_config();
    
-    println!("{:#?}", config);
-    let extension = "nigga";
+    let extension = "foo";
     let searched_extension = Value::String(extension.to_string());
+
+    println!("{:#?}", config);
     if let Some(path) = get_configured_path(&config, &searched_extension, "".into()) {
         println!("{}/", path);
+    } else {
+        todo!("handle files with non configured extensions")
     }
 
     match directory {

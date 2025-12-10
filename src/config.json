@@ -2,7 +2,7 @@
     "Bilder": ["svg", "jpg", "jpeg", "png", "gif", "webp"],
     "Videos": [
         ["mp4", "mkv"],
-        { "bar": ["blub", "nigga"] }
+        { "bar": ["blub", "foo"] }
     ],
     "Dokumente": ["pdf", "docx", "odt", "txt"],
     "Musik": ["mp3", "wav", "flac"]
