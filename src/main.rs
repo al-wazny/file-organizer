@@ -26,7 +26,6 @@ fn get_dir_entries(entries: ReadDir) -> Vec<String> {
             let path = _entry.path();
 
             if let Some(extension) = path.extension() {
-                println!("{:?}", extension);
                 extensions.push(extension.display().to_string());
             }
         }
@@ -43,11 +42,31 @@ fn get_config() -> Value {
     serde_json::from_str(&config_path).unwrap()
 }
 
-fn find_value(c: &Value, target: &Value) -> bool {
-    match c {
-        Value::Array(arr) => arr.iter().any(|item| find_value(item, target)),
-        Value::Object(obj) => obj.values().any(|item| find_value(item, target)),
-        _ => c == target,
+fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<String> {
+    match json {
+        Value::Array(arr) => {
+            for (_, item) in arr.iter().enumerate() {
+                let new_path = format!("{}", path);
+                if let Some(p) = get_configured_path(item, target, new_path) {
+                    return Some(p);
+                }
+            }
+            None
+        }
+        Value::Object(obj) => {
+            for (key, value) in obj.iter() {
+                let new_path = if path.is_empty() {
+                    key.to_string()
+                } else {
+                    format!("{}/{}", path, key)
+                };
+                if let Some(p) = get_configured_path(value, target, new_path) {
+                    return Some(p);
+                }
+            }
+            None
+        }
+        _ => { if json == target { Some(path) } else { None } }
     }
 }
 
@@ -56,9 +75,12 @@ fn main() {
     let directory = fs::read_dir(args.path);
     let config = get_config();
    
-    println!("{:#}", config);
-    // check if a given file extension has a path configured
-    println!("{}", find_value(&config, &Value::String("bar".into())));
+    println!("{:#?}", config);
+    let extension = "nigga";
+    let searched_extension = Value::String(extension.to_string());
+    if let Some(path) = get_configured_path(&config, &searched_extension, "".into()) {
+        println!("{}/", path);
+    }
 
     match directory {
         Ok(_dir) => {
