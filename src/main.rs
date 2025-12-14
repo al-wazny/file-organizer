@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::fs::{self, ReadDir};
+use std::fs::{self};
 use serde_json::Value;
 use std::env;
 use std::path::PathBuf;
@@ -19,22 +19,24 @@ struct Cli {
     backup: bool,
 }
 
+#[derive(Debug)]
+struct File {
+    extension: String,
+    current_path: PathBuf,
+    new_path: Option<PathBuf>,
+}
 
-fn get_dir_entries(entries: ReadDir) -> Vec<String> {
-    let mut extensions = vec![];
-
-    for entry in entries {
-
-        if let Ok(_entry) = entry {
-            let path = _entry.path();
-
-            if let Some(extension) = path.extension() {
-                extensions.push(extension.display().to_string());
-            }
-        }
-    }
-
-    extensions
+fn get_dir_entries(directory_path: &PathBuf) -> Option<Vec<File>> {
+    fs::read_dir(directory_path).ok().map(|dir| {
+        dir.filter_map(Result::ok).filter_map(|entry| {
+            let path = entry.path();
+            Some(File {
+                extension: path.extension()?.to_string_lossy().to_string(),
+                current_path: path,
+                new_path: None,
+            })
+        }).collect()
+    })
 }
 
 
@@ -48,7 +50,7 @@ fn get_config() -> Value {
 
 
 // search json recursively and return configured path if given target is set inside config.json
-fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<String> {
+fn get_configured_path(json: &Value, target: &String, path: String) -> Option<String> {
     match json {
         Value::Array(arr) => {
             for (_, item) in arr.iter().enumerate() {
@@ -61,11 +63,7 @@ fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<Str
         }
         Value::Object(obj) => {
             for (key, value) in obj.iter() {
-                let new_path = if path.is_empty() {
-                    key.to_string()
-                } else {
-                    format!("{}/{}", path, key)
-                };
+                let new_path = if path.is_empty() { key.to_string() } else { format!("{}/{}", path, key) };
                 if let Some(p) = get_configured_path(value, target, new_path) {
                     return Some(p);
                 }
@@ -79,32 +77,27 @@ fn get_configured_path(json: &Value, target: &Value, path: String) -> Option<Str
 
 fn get_absolute_path(rel_path: &String) -> PathBuf {
     let relative = PathBuf::from(rel_path);
-    // (fix) this returns the absolutepath of project directory
-    // (todo) get absolute path to user space
-    let current_dir = env::current_dir().unwrap();
-    current_dir.join(&relative) 
+    let mut absolute_path = env::home_dir().unwrap();
+    absolute_path.push(&relative);
+
+    absolute_path
 }
 
 
 fn main() {
     let args = Cli::parse();
-    let directory = fs::read_dir(args.path);
-    let config = get_config();
-   
-    let extension = "foo";
-    let searched_extension = Value::String(extension.to_string());
+    let directory_path = PathBuf::from(args.path);
+    
+    if let Some(mut entries) = get_dir_entries(&directory_path) {
+        entries.iter_mut().for_each(|entry| {
+            let config = get_config();
 
-    if let Some(path) = get_configured_path(&config, &searched_extension, "".into()) {
-        let path_buf: PathBuf = get_absolute_path(&path);
+            if let Some(new_path) = get_configured_path(&config, &entry.extension, "".into()) {
+                let new_absolute_path = get_absolute_path(&new_path);
+                entry.new_path = Some(new_absolute_path);
 
-        println!("{:#?}", config);
-        println!("{}", path_buf.display());
-    } else {
-        todo!("handle files with non configured extensions")
-    }
-
-    match directory {
-        Ok(_dir) => { get_dir_entries(_dir); }
-        Err(e) => { println!("Error opening directory: {}", e); }
-    }
+                println!("new path of {:?} is: {:?}", entry.current_path, entry.new_path);
+            }
+        });
+    } 
 }
