@@ -1,4 +1,6 @@
 use clap::Parser;
+use regex::Regex;
+use std::ffi::{OsString};
 use std::fs::{self};
 use serde_json::Value;
 use std::env;
@@ -21,21 +23,26 @@ struct Cli {
 
 #[derive(Debug)]
 struct File {
-    extension: String,
+    extension: OsString,
+    file_name: OsString,
     current_path: PathBuf,
     new_path: Option<PathBuf>,
 }
 
 fn get_dir_entries(directory_path: &PathBuf) -> Option<Vec<File>> {
     fs::read_dir(directory_path).ok().map(|dir| {
-        dir.filter_map(Result::ok).filter_map(|entry| {
-            let path = entry.path();
-            Some(File {
-                extension: path.extension()?.to_string_lossy().to_string(),
-                current_path: path,
-                new_path: None,
-            })
-        }).collect()
+        dir.filter_map(Result::ok)
+            .filter(|entry| entry.file_type()
+            .map(|ft| ft.is_file()).unwrap_or(false))
+            .map(|entry| {
+                let path = entry.path();
+                File {
+                    extension: path.extension().unwrap().to_owned(),
+                    file_name: path.file_stem().unwrap().to_owned(),
+                    current_path: path.as_path().to_owned(),
+                    new_path: None,
+                }
+            }).collect()
     })
 }
 
@@ -50,12 +57,11 @@ fn get_config() -> Value {
 
 
 // search json recursively and return configured path if given target is set inside config.json
-fn get_configured_path(json: &Value, target: &String, path: String) -> Option<String> {
+fn get_configured_path(json: &Value, file: &File, path: &String) -> Option<String> {
     match json {
         Value::Array(arr) => {
-            for (_, item) in arr.iter().enumerate() {
-                let new_path = format!("{}", path);
-                if let Some(p) = get_configured_path(item, target, new_path) {
+            for item in arr.iter() {
+                if let Some(p) = get_configured_path(item, file, path) {
                     return Some(p);
                 }
             }
@@ -64,13 +70,20 @@ fn get_configured_path(json: &Value, target: &String, path: String) -> Option<St
         Value::Object(obj) => {
             for (key, value) in obj.iter() {
                 let new_path = if path.is_empty() { key.to_string() } else { format!("{}/{}", path, key) };
-                if let Some(p) = get_configured_path(value, target, new_path) {
+                if let Some(p) = get_configured_path(value, file, &new_path) {
                     return Some(p);
                 }
             }
             None
         }
-        _ => { if json == target { Some(path) } else { None } }
+        _ => {
+            // (fix) regex needs to be specified in the config file before the file extensions
+            // (chore) clean this messy shit up later on to make it somewhat human readable
+            if json.as_str() == file.extension.to_str() || 
+                Regex::new(json.as_str()?).unwrap().is_match(file.file_name.to_str()?) {
+                Some(path.to_owned()) 
+            } else { None } 
+        }
     }
 }
 
@@ -92,11 +105,10 @@ fn main() {
         entries.iter_mut().for_each(|entry| {
             let config = get_config();
 
-            if let Some(new_path) = get_configured_path(&config, &entry.extension, "".into()) {
+            if let Some(new_path) = get_configured_path(&config, &entry, &"".into()) {
                 let new_absolute_path = get_absolute_path(&new_path);
                 entry.new_path = Some(new_absolute_path);
-
-                println!("new path of {:?} is: {:?}", entry.current_path, entry.new_path);
+                println!("{:#?}", entry);
             }
         });
     } 

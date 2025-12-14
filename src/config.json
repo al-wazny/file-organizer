@@ -4,6 +4,9 @@
         ["mp4", "mkv"],
         { "bar": ["blub", "foo"] }
     ],
-    "Dokumente": ["pdf", "docx", "odt", "txt"],
+    "Dokumente": [
+        { "Anschreiben": "(?i)^anschreiben" },
+        ["pdf", "docx", "odt", "txt"]
+    ], 
     "Musik": ["mp3", "wav", "flac"]
 }
