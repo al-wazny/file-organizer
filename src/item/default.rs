@@ -1,31 +1,38 @@
 use crate::File;
 use crate::WalkDir;
 use std::ffi::OsString;
+use std::fs;
+use std::fs::DirEntry;
+use std::fs::FileType;
 use std::io::Write;
 use std::path::PathBuf;
 
 pub struct ItemCollector {
-    pub name: OsString,
+    pub name: String,
     pub path: PathBuf,
     pub depth: usize,
-    pub file_type: OsString,
+    pub file_type: FileType,
     pub size: u64,
 }
 
+// Todo refactor this
 impl ItemCollector {
     #[inline(always)]
-    pub fn new(entry: &File, depth: &usize) -> Option<ItemCollector> {
-        // todo maybe stop returning Option<>
-        if entry.new_path.is_some() {
-            Some(ItemCollector {
-                name: entry.name.clone(),
-                path: entry.new_path.clone().unwrap(),
-                depth: depth.to_owned(),
-                file_type: entry.extension.clone(),
-                size: 0,
-            })
-        } else {
-            None
+    pub fn new(entry: &DirEntry, depth: &usize) -> ItemCollector {
+        let full_path = entry.path();
+        let metadata = fs::symlink_metadata(&full_path).unwrap();
+        let file_type = entry.file_type().unwrap();
+
+        ItemCollector {
+            name: full_path
+                .file_name()
+                .and_then(|os_str| os_str.to_str())
+                .map(ToString::to_string)
+                .unwrap_or_else(|| "Invalid full-path".into()),
+            path: full_path,
+            depth: depth.to_owned(),
+            file_type,
+            size: metadata.len(),
         }
     }
 
@@ -43,7 +50,7 @@ impl ItemCollector {
     // TODO: 'process_dir' and 'process_file' should be a trait?
     #[inline(always)]
     fn process_dir(&self, walk: &mut WalkDir<'_>) {
-        write!(walk.std_out, " ──> {}", &self.path.display()).unwrap();
+        write!(walk.std_out, "{} ──> {}", &self.name, &self.path.display()).unwrap();
 
         // Create newline
         writeln!(walk.std_out).unwrap();
@@ -55,7 +62,7 @@ impl ItemCollector {
 
         // -----------------------------
         // (INFO) this is a recursive traversale to display the tree structure
-        // WalkDir::new(walk.tree, &self.entries, walk.std_out, walk.total1).walk();
+        WalkDir::new(walk.tree, &self.path, walk.std_out, walk.total).walk();
         // -----------------------------
 
         // Subtract 1 as we fall back from DFS
@@ -65,10 +72,9 @@ impl ItemCollector {
 
     #[inline(always)]
     fn process_file(&self, walk: &mut WalkDir<'_>) {
-        write!(walk.std_out, "{}", &self.name.to_string_lossy()).unwrap_or_default();
+        write!(walk.std_out, "{}", &self.name.to_string()).unwrap_or_default();
 
         write!(walk.std_out, " ──> {}", &self.path.display()).unwrap();
-        println!("{}", self.path.display());
 
         // Create newline
         writeln!(walk.std_out).unwrap();

@@ -5,11 +5,11 @@ use clap::Parser;
 use regex::Regex;
 use serde_json::Value;
 use std::env;
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs::{self};
 use std::io;
 use std::io::BufWriter;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 mod item;
 mod tree;
@@ -38,10 +38,18 @@ pub struct File {
     new_path: Option<PathBuf>,
 }
 
-fn run_tree(entries: &Vec<File>) {
+#[derive(Debug)]
+pub struct Entry {
+    name: String,
+    is_file: bool,
+    file: Option<File>,
+}
+
+fn run_tree() {
     let config = Config::new(Vec::with_capacity(5_000), 1);
     let mut std_out = BufWriter::new(io::stdout());
     let mut tree = Tree::new(config, Branch::new());
+    // todo implement the default trait
     let mut totals = Totals {
         directories: 0,
         files: 0,
@@ -51,23 +59,32 @@ fn run_tree(entries: &Vec<File>) {
     // (Info) the flag is needed to check if the depth limit is reached
     // it traverses the each directory till it reaches a branch, but you're already giving him
     // the entire path which won't display the entire tree structur
-    WalkDir::new(&mut tree, entries, &mut std_out, &mut totals).walk();
+    WalkDir::new(
+        &mut tree,
+        Path::new("/home/lalwazny"),
+        &mut std_out,
+        &mut totals,
+    )
+    .walk();
 }
 
 fn get_dir_entries(directory_path: &PathBuf) -> Option<Vec<File>> {
     fs::read_dir(directory_path).ok().map(|dir| {
         dir.filter_map(Result::ok)
-            .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
-            .filter(|entry| entry.path().extension().is_some())
+            // .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
+            // .filter(|entry| entry.path().extension().is_some())
             .map(|entry| {
+                // if let path = entry.path() {
+                //
+                // }
                 let path = entry.path();
-                let extension = path.extension().unwrap();
+                let extension = path.extension().unwrap_or(OsStr::new(""));
                 let file_name = path.file_name().unwrap();
                 let current_path = path.as_path();
 
                 File {
                     extension: extension.to_owned(),
-                    name: file_name.to_owned(),
+                    name: file_name.to_os_string(),
                     current_path: current_path.to_owned(),
                     new_path: None,
                 }
@@ -143,18 +160,21 @@ fn main() {
 
     // todo maybe use a match statement for better redablity
     if let Some(mut entries) = get_dir_entries(&directory_path) {
+        // println!("{:#?}", entries);
         let config = get_config();
         for entry in entries.iter_mut() {
             if let Some(new_path) = get_configured_path(&config, entry, &"".into()) {
                 entry.new_path = Some(new_path);
             }
         }
-
+        // let foo = vec![
+        //     File {}
+        // ];
         // todo parameter should look like ->
         // 0: [0: Dokumente];
         // 1: [0: Dokumente/Anschreiben];
         // 2: [0: Dokumente/Anschreiben/file.txt; 1: Dokumente/Anschreiben/file2.txt];
-        run_tree(&entries);
+        run_tree();
     } else {
         println!("given path either doesn't exist or doesn't contain any files or directories")
     }
