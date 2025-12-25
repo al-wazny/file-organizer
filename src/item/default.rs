@@ -1,4 +1,3 @@
-use crate::File;
 use crate::WalkDir;
 use std::ffi::OsString;
 use std::fs;

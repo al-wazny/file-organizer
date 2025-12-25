@@ -53,19 +53,17 @@ fn run_tree() {
     // (Info) the flag is needed to check if the depth limit is reached
     // it traverses the each directory till it reaches a branch, but you're already giving him
     // the entire path which won't display the entire tree structur
-    WalkDir::new(
-        &mut tree,
-        Path::new("/home/lalwazny"),
-        &mut std_out,
-        &mut totals,
-    )
-    .walk();
+    WalkDir::new(&mut tree, Path::new("."), &mut std_out, &mut totals).walk();
 }
 
 fn main() {
     let args = Cli::parse();
     let directory_path = PathBuf::from(args.path);
-    EntryCollector::get_configured_entries(&directory_path);
+    let config = get_config();
+    let collector = EntryCollector::new(config, directory_path);
+    let _ = collector.get_configured_entries();
+
+    run_tree();
 
     // todo maybe use a match statement for better redablity
     // if let Some(mut entries) = get_dir_entries(&directory_path) {

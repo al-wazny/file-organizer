@@ -2,7 +2,7 @@
     "Bilder": ["svg", "jpg", "jpeg", "png", "gif", "webp"],
     "Videos": [
         ["mp4", "mkv"],
-        { "bar": ["blub", "foo"] }
+        { "bar": ["toml", "lock"] }
     ],
     "Dokumente": [
         { "Anschreiben": "(?i)^anschreiben" },

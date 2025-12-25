@@ -1,5 +1,4 @@
 use crate::item::default::ItemCollector;
-use crate::File;
 use crate::Tree;
 use std::ffi::OsString;
 use std::fs;
@@ -42,8 +41,8 @@ impl<'a> WalkDir<'a> {
     /// Walk the whole directories
     #[inline(always)]
     pub(crate) fn walk(&mut self) {
-        let depth_limit: usize = 4;
-        let mut entries: Vec<_> = fs::read_dir(self.path).unwrap().collect();
+        let depth_limit: usize = 2;
+        let entries: Vec<_> = fs::read_dir(self.path).unwrap().collect();
 
         // println!("{:#?}", entries);
         entries.iter().enumerate().for_each(|(index, entry)| {
