@@ -45,6 +45,7 @@ impl<'a> WalkDir<'a> {
         let depth_limit: usize = 4;
         let mut entries: Vec<_> = fs::read_dir(self.path).unwrap().collect();
 
+        // println!("{:#?}", entries);
         entries.iter().enumerate().for_each(|(index, entry)| {
             match entry.as_ref() {
                 Ok(entry) => {
