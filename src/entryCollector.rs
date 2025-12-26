@@ -5,6 +5,7 @@ use serde_json::Value;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::fs;
+use std::path::Component;
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -31,27 +32,47 @@ impl EntryCollector {
         }
     }
 
-    pub fn get_configured_entries(mut self) -> Result<(), Error> {
+    pub fn get_configured_entries(mut self) -> EntryCollector {
         if let Some(files) = self.get_dir_entries() {
             let new_files = self.set_configured_new_path(files);
+            let path_structur = self.create_result_tree(&new_files);
+
             self.files = Some(new_files);
+            self.tree_result = Some(path_structur);
         }
 
-        println!("{:#?}", &self.files);
-        Ok(())
+        self
     }
 
-    fn create_result_tree(&self) -> Vec<String> {
-        todo!()
+    fn create_result_tree(&self, files: &Vec<Entry>) -> Vec<String> {
+        let mut result: Vec<String> = Vec::new();
+
+        for entry in files {
+            let mut bar = String::new();
+            if let Some(new_path) = &entry.new_path {
+                for component in new_path.components() {
+                    if let Component::Normal(os_str) = component {
+                        let component_path = String::from(os_str.to_str().unwrap());
+                        bar = bar + "/" + component_path.as_str();
+                        if !result.contains(&bar) {
+                            result.push(bar.to_string());
+                        }
+                    }
+                }
+            }
+        }
+
+        result.sort();
+        result
     }
 
     fn set_configured_new_path(&self, files: Vec<Entry>) -> Vec<Entry> {
         let files: Vec<Entry> = files
             .into_iter()
             .map(|mut file| {
-                if let Some(new_path) =
-                    self.get_configured_path(&self.json_config, &file, &String::new())
-                {
+                let config = &self.json_config;
+                let path = &String::new();
+                if let Some(new_path) = self.get_configured_path(config, &file, path) {
                     file.new_path = Some(new_path);
                 }
                 file

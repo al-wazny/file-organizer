@@ -17,7 +17,7 @@ mod walker;
 
 #[derive(Parser, Debug)]
 struct Cli {
-    #[clap(short, long, default_value = ".")]
+    #[clap(short, long, default_value = "./test")]
     path: String,
 
     #[clap(short, long, num_args(0..))]
@@ -60,8 +60,8 @@ fn main() {
     let args = Cli::parse();
     let directory_path = PathBuf::from(args.path);
     let config = get_config();
-    let collector = EntryCollector::new(config, directory_path);
-    let _ = collector.get_configured_entries();
+    let collector = EntryCollector::new(config, directory_path).get_configured_entries();
+    println!("{:#?}", &collector);
 
     run_tree();
 }
