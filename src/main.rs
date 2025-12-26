@@ -32,7 +32,7 @@ struct Cli {
 
 fn get_config() -> Value {
     const PROJECT_DIR: &str = env!("CARGO_MANIFEST_DIR");
-    let mut config_path = format!("{}/src/config.json", PROJECT_DIR);
+    let mut config_path = format!("{}/config.json", PROJECT_DIR);
     config_path = fs::read_to_string(&config_path).unwrap();
 
     // todo add match statement to check for syntax errors or anything
@@ -64,25 +64,4 @@ fn main() {
     let _ = collector.get_configured_entries();
 
     run_tree();
-
-    // todo maybe use a match statement for better redablity
-    // if let Some(mut entries) = get_dir_entries(&directory_path) {
-    //     let config = get_config();
-    //     for entry in entries.iter_mut() {
-    //         if let Some(new_path) = get_configured_path(&config, entry, &"".into()) {
-    //             entry.new_path = Some(new_path);
-    //         }
-    //     }
-    //     println!("{:#?}", entries);
-    //     // let foo = vec![
-    //     //     File {}
-    //     // ];
-    //     // todo parameter should look like ->
-    //     // 0: [0: Dokumente];
-    //     // 1: [0: Dokumente/Anschreiben];
-    //     // 2: [0: Dokumente/Anschreiben/file.txt; 1: Dokumente/Anschreiben/file2.txt];
-    //     run_tree();
-    // } else {
-    //     println!("given path either doesn't exist or doesn't contain any files or directories")
-    // }
 }

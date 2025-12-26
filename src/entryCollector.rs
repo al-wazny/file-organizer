@@ -12,7 +12,7 @@ pub struct EntryCollector {
     json_config: Value,
     search_path: PathBuf,
     files: Option<Vec<Entry>>,
-    tree_result: Vec<String>, //TODO create hashmap or something to use later for print_tree
+    tree_result: Option<Vec<String>>, //TODO create hashmap or something to use later for print_tree
 }
 
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl EntryCollector {
             json_config: config,
             search_path: path,
             files: None,
-            tree_result: vec![],
+            tree_result: None,
         }
     }
 
