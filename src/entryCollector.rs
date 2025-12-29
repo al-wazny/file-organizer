@@ -13,7 +13,7 @@ pub struct EntryCollector {
     json_config: Value,
     search_path: PathBuf,
     files: Option<Vec<Entry>>,
-    tree_result: Option<Vec<String>>, //TODO create hashmap or something to use later for print_tree
+    pub tree_result: Option<Vec<PathBuf>>, //TODO create hashmap or something to use later for print_tree
 }
 
 #[derive(Debug)]
@@ -40,22 +40,25 @@ impl EntryCollector {
             self.files = Some(new_files);
             self.tree_result = Some(path_structur);
         }
-
+        
+        //println!("{:#?}", &self);
         self
     }
 
-    fn create_result_tree(&self, files: &Vec<Entry>) -> Vec<String> {
-        let mut result: Vec<String> = Vec::new();
+    fn create_result_tree(&self, files: &Vec<Entry>) -> Vec<PathBuf> {
+        let mut result: Vec<PathBuf> = Vec::new();
 
         for entry in files {
-            let mut bar = String::new();
+            let mut full_path = PathBuf::new();
+            
             if let Some(new_path) = &entry.new_path {
                 for component in new_path.components() {
                     if let Component::Normal(os_str) = component {
-                        let component_path = String::from(os_str.to_str().unwrap());
-                        bar = bar + "/" + component_path.as_str();
-                        if !result.contains(&bar) {
-                            result.push(bar.to_string());
+                        let component_path = os_str.to_string_lossy().to_string();
+                        full_path.push(component_path);
+
+                        if !result.contains(&full_path) {
+                            result.push(full_path.clone());
                         }
                     }
                 }
