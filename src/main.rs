@@ -1,11 +1,11 @@
-#![allow(dead_code, unused_variables)]
+#![allow(unused)]
 use crate::entryCollector::EntryCollector;
 use crate::tree::{Branch, Config, Tree};
 use crate::walker::{Totals, WalkDir};
 use clap::Parser;
 use serde_json::Value;
 use std::env;
-use std::fs::{self};
+use std::fs::{self, DirBuilder};
 use std::io;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
@@ -39,7 +39,7 @@ fn get_config() -> Value {
     serde_json::from_str(&config_path).unwrap()
 }
 
-fn run_tree(files_path: &Vec<PathBuf>) {
+fn run_tree(files_path:&Vec<Vec<String>>) {
     let config = Config::new(Vec::with_capacity(5_000), 1);
     let mut std_out = BufWriter::new(io::stdout());
     let mut tree = Tree::new(config, Branch::new());
@@ -53,16 +53,21 @@ fn run_tree(files_path: &Vec<PathBuf>) {
     // (Info) the flag is needed to check if the depth limit is reached
     // it traverses the each directory till it reaches a branch, but you're already giving him
     // the entire path which won't display the entire tree structur
-    WalkDir::new(&mut tree, Path::new("."), &mut std_out, &mut totals, files_path).walk();
+    for dir in files_path {
+        WalkDir::new(&mut tree, Path::new("./test"), &mut std_out, &mut totals, dir).walk();
+    }
 }
 
 fn main() {
-    let args = Cli::parse();
+    let args  = Cli::parse();
     let directory_path = PathBuf::from(args.path);
     let config = get_config();
     let collector = EntryCollector::new(config, directory_path).get_configured_entries();
     let tree_result = collector.tree_result.as_ref().unwrap();
-    run_tree(&tree_result);
-    println!("{:#?}", &collector);
+
+
+
+    println!("{:#?}", &tree_result);
+    //run_tree(tree_result);
 
 }

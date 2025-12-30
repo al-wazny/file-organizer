@@ -1,0 +1,175 @@
+
+
+warning: `file-organizer` (bin "file-organizer") generated 6 warnings (run `cargo fix --bin "file-organizer" -p file-organizer` to apply 6 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.52s
+     Running `target/debug/file-organizer`
+[
+    Ok(
+        DirEntry(
+            "./.git",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./.gitignore",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./Cargo.lock",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./Cargo.toml",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target",
+        ),
+    ),
+]
+[
+    Ok(
+        DirEntry(
+            "./src/config.json",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src/helper.rs",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src/item",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src/main.rs",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src/tree.rs",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src/walker.rs",
+        ),
+    ),
+]
+[
+    Ok(
+        DirEntry(
+            "./src/item/all.rs",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src/item/default.rs",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./src/item/mod.rs",
+        ),
+    ),
+]
+[
+    Ok(
+        DirEntry(
+            "./target/.rustc_info.json",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/CACHEDIR.TAG",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/flycheck0",
+        ),
+    ),
+]
+[
+    Ok(
+        DirEntry(
+            "./target/debug/.cargo-lock",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug/.fingerprint",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug/build",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug/deps",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug/examples",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug/file-organizer",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug/file-organizer.d",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/debug/incremental",
+        ),
+    ),
+]
+[
+    Ok(
+        DirEntry(
+            "./target/flycheck0/stderr",
+        ),
+    ),
+    Ok(
+        DirEntry(
+            "./target/flycheck0/stdout",
+        ),
+    ),
+]
+├── Cargo.lock ──> ./Cargo.lock
+├── Cargo.toml ──> ./Cargo.toml
+├── src ──> ./src
+│   ├── config.json ──> ./src/config.json
+│   ├── helper.rs ──> ./src/helper.rs
+│   ├── item ──> ./src/item
+│   ├── main.rs ──> ./src/main.rs
+│   ├── tree.rs ──> ./src/tree.rs
+│   └── walker.rs ──> ./src/walker.rs
+└── target ──> ./target
+    ├── CACHEDIR.TAG ──> ./target/CACHEDIR.TAG
+    ├── debug ──> ./target/debug
+    └── flycheck0 ──> ./target/flycheck0

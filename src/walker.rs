@@ -1,3 +1,4 @@
+#[warn(unused)]
 use crate::item::default::ItemCollector;
 use crate::Tree;
 use std::ffi::OsString;
@@ -13,7 +14,7 @@ pub struct WalkDir<'a> {
     pub path: &'a Path,
     pub std_out: &'a mut BufWriter<Stdout>,
     pub total: &'a mut Totals,
-    pub result_tree: &'a Vec<PathBuf>,
+    pub result_tree: &'a Vec<String>,
 }
 
 #[derive(Debug)]
@@ -30,7 +31,7 @@ impl<'a> WalkDir<'a> {
         path: &'a Path,
         std_out: &'a mut BufWriter<Stdout>,
         total: &'a mut Totals,
-        result_tree: &'a Vec<PathBuf>
+        result_tree: &'a Vec<String>
     ) -> WalkDir<'a> {
         WalkDir {
             tree,
@@ -54,7 +55,7 @@ impl<'a> WalkDir<'a> {
                 // todo calculate entries length
                 Tree::print_tree(self, index, self.result_tree.len());
 
-                ItemCollector::new(entry, &self.tree.config.depth).get_item(self);
+                ItemCollector::new(&PathBuf::from(entry), &self.tree.config.depth).get_item(self);
 
                 self.tree.config.nodes.pop();
             }

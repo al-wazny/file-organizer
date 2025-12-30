@@ -1,3 +1,4 @@
+#[warn(unused_imports)]
 use crate::WalkDir;
 use std::ffi::OsString;
 use std::fs;

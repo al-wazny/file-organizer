@@ -1,12 +1,14 @@
 {
-    "Bilder": ["svg", "jpg", "jpeg", "png", "gif", "webp"],
+    "Bilder": [
+        ["svg", "jpg", "jpeg", "png", "gif", "webp"],
+        { "foo": ["bar", "zsh"] }
+    ],  
     "Videos": [
         ["mp4", "mkv"],
         { "bar": ["toml", "lock"] }
     ],
     "Dokumente": [
         { "Anschreiben": "(?i)^anschreiben" },
-        { "foo": "bar" },
         ["pdf", "docx", "odt", "txt"]
     ], 
     "Musik": ["mp3", "wav", "flac"]
