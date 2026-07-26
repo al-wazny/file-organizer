@@ -1,9 +1,11 @@
 #[warn(unused_imports)]
 use crate::env;
+use crate::item::all;
 use crate::walker;
 use clap::Error;
 use regex::Regex;
 use serde_json::Value;
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::fs;
@@ -20,13 +22,25 @@ pub struct EntryCollector {
     pub json_config: Value,
     pub search_path: PathBuf,
     pub files: Option<Vec<Entry>>,
-    pub tree_result: Option<Vec<(PathBuf, Vec<PathBuf>)>>, //TODO create hashmap or something to use later for print_tree
+    pub tree_result: Option<HashMap<PathBuf, Vec<PathBuf>>>//TODO create hashmap or something to use later for print_tree
+}
+
+enum EntryType {
+    Dir(PathBuf),
+    File(PathBuf, PathBuf), // (parent_dir, file_name)
 }
 
 #[derive(Debug)]
 pub struct Entry {
     current_path: PathBuf, // getter for filename and extension
     new_path: Option<PathBuf>,
+}
+
+#[derive(Debug)]
+pub struct DebugEntry {
+    path: PathBuf,
+    parent: PathBuf,
+    index: u16,
 }
 
 impl EntryCollector {
@@ -42,14 +56,27 @@ impl EntryCollector {
     pub fn get_configured_entries(mut self) -> EntryCollector {
         match self.get_dir_entries() {
             Ok(files) => {
-                // maybe need a for loop?
                 let updated_files = self.set_configured_new_path(files);
-                let result_tree = self.create_result_tree(&updated_files); // todo renmae methode
-                let walker_struct = self.create_walker_struct(&updated_files);
+                let paths: Vec<PathBuf> = updated_files
+                    .iter()
+                    .filter_map(|entry| entry.new_path.as_ref().cloned())
+                    .collect();
 
-                //println!("{:#?}", walker_struct);
+                //TODO filter Entry to get Vec<PathBuf> (new_path) and build up every depth level of the dir_structure
+                let foo = EntryCollector::add_parent_dirs(&paths); // todo rename add_missing_depth?
+                //println!("foo {:#?}", foo);
+                
+                // STOP don't move forward before completing previous todo
+                let result_tree = self.create_result_tree(&foo); // todo return Vec<Vec<PathBuf>>
+                println!("tree {:#?}", result_tree
+            
+            );
+                
+                let walker_struct = self.create_walker_struct(&updated_files);
+ 
+                //println!("{:#?}", walker_struct);*/
                 self.files = Some(updated_files);
-                self.tree_result = Some(walker_struct);
+                //self.tree_result = Some(walker_struct);
 
             }
             Err(_) => println!("couldn't get the files from given directory")
@@ -58,16 +85,48 @@ impl EntryCollector {
         self
     }
 
-    fn create_walker_struct(&self, entries: &Vec<Entry>) -> Vec<(PathBuf, Vec<PathBuf>)> {
-        //let mut map: HashMap<String, Vec<PathBuf>> = HashMap::new(); //todo rename this variable
-        let mut tree: Vec<Vec<PathBuf>> = Vec::new();
-        let mut path_siblings: Vec<PathBuf> = Vec::new();
+    pub fn add_parent_dirs(paths: &Vec<PathBuf>) -> Vec<PathBuf> {
+        let mut result = Vec::new();
+        let mut seen = HashSet::new();
+
+        for path in paths {
+            // Collect parent directories from root downwards
+            let mut parents = Vec::new();
+
+            let mut current = path.parent();
+            while let Some(parent) = current {
+                if parent.as_os_str().is_empty() {
+                    break;
+                }
+
+                parents.push(parent.to_path_buf());
+                current = parent.parent();
+            }
+
+            // Add parents in the correct order
+            for parent in parents.into_iter().rev() {
+                if seen.insert(parent.clone()) {
+                    result.push(parent);
+                }
+            }
+
+            // Add the original path
+            if seen.insert(path.clone()) {
+                result.push(path.clone());
+            }
+        }
+
+        result
+    }
+
+    fn create_walker_struct(&self, entries: &Vec<Entry>) -> HashMap<PathBuf, Vec<PathBuf>> {
+        let mut tree: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new(); //? final vec to be returned as function call
         let mut new_paths: Vec<PathBuf> = entries
                                             .iter()
                                             .filter_map(|entry| entry.new_path.clone())
                                             .collect();
                     
-        // Create a HashMap to store parent -> children mapping
+        // Create a HashMap to store path (index) pointing to its contents (value)
         if let Some(home_dir) = env::home_dir() {
             let mut path_parts = PathBuf::from("/");
             for c in home_dir.components() {
@@ -78,26 +137,30 @@ impl EntryCollector {
             }
         }
         new_paths.sort_by_key(|path| path.components().count());
-        println!("new_paths {:#?}", &new_paths);
-        
-        // TODO create vec based on components length and max one child
-        let mut all_paths: Vec<PathBuf> = Vec::new();
+        println!("{:#?}", &new_paths);
         for (index, path) in new_paths.into_iter().enumerate() {
-            let home_dir = PathBuf::new();
+            
             if let Some(parent) = path.parent() {
+
+
                 let mut parent_path = parent.to_path_buf();
-                let mut current_path = parent.to_path_buf():
+                let mut current_path = path.to_path_buf();
+                
+                /* println!("{:#?}", DebugEntry {
+                    parent: parent_path.clone(),
+                    path: current_path.clone(),
+                    index: index.clone() as u16,
+                }); */
+                            
+                tree.entry(parent_path)
+                    .or_insert_with(Vec::new)
+                    .push(current_path);
+
             }
             
-            
-            //if parent_path.components().count() == index {
-                //println!("path: {:#?}; index: {:#?}", &parent_path, &index);
-                //} else if current_path.components().count() == index {
-                    //println!("path: {:#?}; index: {:#?}", &current_path, &index);
-                    //} 
         }
         
-        todo!()
+        tree
     }   
 
     // todo
@@ -130,15 +193,8 @@ impl EntryCollector {
         files
     }
 
-    fn create_result_tree(&self, files: &Vec<Entry>) -> Vec<PathBuf> {
-        let mut dir_fir_childss = Vec::new();
-        for result in files.iter() {
-            let path = result.new_path.as_ref().unwrap().as_path();
-            let abs_new_path = env::current_dir().unwrap().join(path);
-
-            dir_fir_childss.push(abs_new_path);
-        }
-        dir_fir_childss
+    fn create_result_tree(&self, files: &Vec<PathBuf>) -> Vec<PathBuf> {
+        todo!("sort files in correct order and group everything")
     }
 
     // todo make path parameter of type pathbuf
