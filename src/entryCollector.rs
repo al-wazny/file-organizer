@@ -21,7 +21,7 @@ pub struct EntryCollector {
     pub json_config: Value,
     pub search_path: PathBuf,
     pub files: Option<Vec<EntryType>>,
-    pub tree_result: Option<HashMap<PathBuf, Vec<PathBuf>>>, //?mayeb use type Vec<Vec<EntryType>>
+    pub tree_result: Vec<Vec<String>>, //?mayeb use type Vec<Vec<EntryType>>
 }
 
 #[derive(Debug)]
@@ -57,7 +57,7 @@ impl EntryCollector {
             json_config: config,
             search_path: path,
             files: None,
-            tree_result: None,
+            tree_result: Vec::new(),
         }
     }
 
@@ -68,8 +68,9 @@ impl EntryCollector {
                 let updated_entries = self.set_configured_new_path(entries);
                 let entries_path_build_up = self.add_parent_dirs(&updated_entries);
 
-                self.correct_order(&entries_path_build_up);
-                println!("{:#?}", &entries_path_build_up);
+                self.correct_order(&entries_path_build_up, None);
+                // println!("{:#?}", &entries_path_build_up);
+                // println!("{:#?}", &self.tree_result);
 
                 // STOP don't move forward before completing previous todo
                 // let result_tree = self.create_result_tree(&foo); // todo return Vec<Vec<PathBuf>>
@@ -77,7 +78,7 @@ impl EntryCollector {
                 // let walker_struct = self.create_walker_struct(&updated_files);
 
                 //println!("{:#?}", walker_struct);*/
-                // self.files = Some(updated_files);
+                //self.files = Some(updated_files);
                 //self.tree_result = Some(walker_struct);
             }
             Err(_) => println!("couldn't get the files from given directory"),
@@ -86,38 +87,111 @@ impl EntryCollector {
         self
     }
 
-    // ?maybe add a second param for the recursion (name: dirs)
-    // ?maybe change param type to Vec<&PathBuf>
-    // ?maybe create the dir structure of the config.json even if some dirs stay empty
-    // ?maybe passing in all the paths creates a lot of overhead
-    pub fn correct_order(&self, paths: &Vec<EntryType>) {
-        for entry in paths.iter() {
-            let Some(path) = entry.resolved_path() else {
-                continue;
-            };
-            let dir_depth = path.components().count();
-            // 3. for each dir: list only the immediat content (current_depth + 1)
+    pub fn correct_order(&mut self, paths: &Vec<EntryType>, dirs: Option<Vec<&PathBuf>>) {
+        let mut visited = HashSet::new();
+        self.correct_order_inner(paths, dirs, &mut visited);
+    }
+
+    fn correct_order_inner(
+        &mut self,
+        paths: &Vec<EntryType>,
+        dirs: Option<Vec<&PathBuf>>,
+        visited: &mut HashSet<PathBuf>,
+    ) {
+        let test: Vec<&PathBuf> = if let Some(dirs) = &dirs {
+            dirs.clone()
+        } else {
+            paths.iter().filter_map(|e| e.resolved_path()).collect()
+        };
+
+        for entry in test.iter() {
+            let dir_depth = entry.components().count();
+
             let path_content: Vec<&EntryType> = paths
                 .iter()
                 .filter(|p| {
                     let Some(cmp) = p.resolved_path() else {
-                        return false; // unresolved File entries can't match
+                        return false;
                     };
-                    cmp.components().count() == dir_depth + 1 && cmp.starts_with(path)
+                    cmp.components().count() == (dir_depth + 1)
+                        && cmp.starts_with(entry)
+                        && !visited.contains(cmp) // skip anything already processed
                 })
                 .collect();
 
+            // mark everything in this batch as visited before recursing
+            for p in &path_content {
+                if let Some(cmp) = p.resolved_path() {
+                    visited.insert(cmp.clone());
+                }
+            }
+
             let path_dirs: Vec<&PathBuf> = path_content
+                .clone()
                 .into_iter()
                 .filter(|p| p.is_dir_variant())
                 .filter_map(|p| p.resolved_path())
                 .collect();
 
-            // if !path_dirs.is_empty() {
-            //     println!("dirs {:#?}", path_dirs);
-            // }
+            let content: Vec<String> = path_content
+                .into_iter()
+                .filter_map(|e| e.resolved_path().cloned())
+                .map(|p| p.to_string_lossy().into_owned())
+                .collect();
+
+            if !content.is_empty() {
+                self.tree_result.push(content);
+            }
+            if !path_dirs.is_empty() {
+                self.correct_order_inner(paths, Some(path_dirs), visited);
+            }
         }
     }
+
+    // ?maybe add a second param for the recursion (name: dirs)
+    // ?maybe change param type to Vec<&PathBuf>
+    // ?maybe create the dir structure of the config.json even if some dirs stay empty
+    // ?maybe passing in all the paths creates a lot of overhead
+    // pub fn correct_order(&mut self, paths: &Vec<EntryType>, dirs: Option<Vec<&PathBuf>>) {
+    //     let test: Vec<&PathBuf> = if let Some(dirs) = &dirs {
+    //         dirs.clone()
+    //     } else {
+    //         paths.iter().filter_map(|e| e.resolved_path()).collect()
+    //     };
+    //     // println!("1 dirs {:#?}", &test);
+    //     for entry in test.iter() {
+    //         let dir_depth = entry.components().count();
+    //         // 3. for each dir: list only the immediat content (current_depth + 1)
+    //         let path_content: Vec<&EntryType> = paths
+    //             .iter()
+    //             .filter(|p| {
+    //                 let Some(cmp) = p.resolved_path() else {
+    //                     return false; // unresolved File entries can't match
+    //                 };
+    //                 cmp.components().count() == (dir_depth + 1) && cmp.starts_with(entry)
+    //             })
+    //             .collect();
+    //
+    //         let path_dirs: Vec<&PathBuf> = path_content
+    //             .clone()
+    //             .into_iter()
+    //             .filter(|p| p.is_dir_variant())
+    //             .filter_map(|p| p.resolved_path())
+    //             .collect();
+    //
+    //         let content: Vec<PathBuf> = path_content
+    //             .into_iter()
+    //             .map(|e| e.resolved_path().unwrap())
+    //             .cloned()
+    //             .collect();
+    //
+    //         self.tree_result.push(content);
+    //         if !path_dirs.is_empty() {
+    //             self.correct_order(paths, Some(path_dirs))
+    //         }
+    //     }
+    //     // self.tree_result.push(content);
+    // }
 
     pub fn add_parent_dirs(&self, entries: &Vec<Entry>) -> Vec<EntryType> {
         let mut result: Vec<EntryType> = Vec::new();

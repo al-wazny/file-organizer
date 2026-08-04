@@ -1,10 +1,14 @@
 {
     "Bilder": [
-        ["svg", "jpg", "jpeg", "png", "gif", "webp"],
-        { "foo": ["bar", "zsh"] }
+        ["svg", "jpg", "jpeg", "png", "gif", "webp"]
     ],  
     "Videos": [
         ["mp4", "mkv"],
+        {"foo": {
+            "lol": {"bar": {"sha": "bib"}},
+            "blub": "zsh"
+            }
+        },
         { "bar": ["toml", "lock"] }
     ],
     "Dokumente": [

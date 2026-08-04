@@ -39,7 +39,7 @@ fn get_config() -> Value {
     serde_json::from_str(&config_path).unwrap()
 }
 
-fn run_tree(files_path:&Vec<Vec<String>>) {
+fn run_tree(files_path: &Vec<Vec<String>>) {
     let config = Config::new(Vec::with_capacity(5_000), 1);
     let mut std_out = BufWriter::new(io::stdout());
     let mut tree = Tree::new(config, Branch::new());
@@ -54,20 +54,24 @@ fn run_tree(files_path:&Vec<Vec<String>>) {
     // it traverses the each directory till it reaches a branch, but you're already giving him
     // the entire path which won't display the entire tree structur
     for dir in files_path {
-        WalkDir::new(&mut tree, Path::new("./test"), &mut std_out, &mut totals, dir).walk();
+        WalkDir::new(
+            &mut tree,
+            Path::new("./test"),
+            &mut std_out,
+            &mut totals,
+            dir,
+        )
+        .walk();
     }
 }
 
 fn main() {
-    let args  = Cli::parse();
+    let args = Cli::parse();
     let directory_path = PathBuf::from(args.path);
     let config = get_config();
     let collector = EntryCollector::new(config, directory_path).get_configured_entries();
-    let tree_result = collector.tree_result.as_ref().unwrap();
+    let tree_result = collector.tree_result;
 
-
-
-    println!("{:#?}", &tree_result);
-    //run_tree(tree_result);
-
+    // println!("{:#?}", &tree_result);
+    run_tree(&tree_result);
 }
