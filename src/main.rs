@@ -53,16 +53,15 @@ fn run_tree(files_path: &Vec<Vec<String>>) {
     // (Info) the flag is needed to check if the depth limit is reached
     // it traverses the each directory till it reaches a branch, but you're already giving him
     // the entire path which won't display the entire tree structur
-    for dir in files_path {
-        WalkDir::new(
-            &mut tree,
-            Path::new("./test"),
-            &mut std_out,
-            &mut totals,
-            dir,
-        )
-        .walk();
-    }
+    // for dir in files_path {
+    WalkDir::new(
+        &mut tree,
+        Path::new("/home/lalwazny/repos"),
+        &mut std_out,
+        &mut totals, // dir,
+    )
+    .walk(&files_path);
+    // }
 }
 
 fn main() {
@@ -72,6 +71,6 @@ fn main() {
     let collector = EntryCollector::new(config, directory_path).get_configured_entries();
     let tree_result = collector.tree_result;
 
-    // println!("{:#?}", &tree_result);
+    println!("{:#?}", &tree_result);
     run_tree(&tree_result);
 }

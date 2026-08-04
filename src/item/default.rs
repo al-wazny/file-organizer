@@ -1,4 +1,4 @@
-#[warn(unused_imports)]
+// use crate::File;
 use crate::WalkDir;
 use std::ffi::OsString;
 use std::fs;
@@ -11,25 +11,28 @@ pub struct ItemCollector {
     pub name: String,
     pub path: PathBuf,
     pub depth: usize,
-    pub file_type: Option<FileType>,
-    pub size: Option<u64>,
+    pub file_type: FileType,
+    pub size: u64,
 }
 
 // Todo refactor this
 impl ItemCollector {
     #[inline(always)]
-    pub fn new(entry: &PathBuf, depth: &usize) -> ItemCollector {
-        let name = entry.file_name().unwrap().to_string_lossy().to_string().to_owned();
-        let path = entry.as_path().to_path_buf();
-        let file_type = entry.metadata().ok().map(|file| file.file_type());
-        let size =  entry.metadata().ok().map(|file| file.len());
+    pub fn new(entry: &DirEntry, depth: &usize) -> ItemCollector {
+        let full_path = entry.path();
+        let metadata = fs::symlink_metadata(&full_path).unwrap();
+        let file_type = entry.file_type().unwrap();
 
         ItemCollector {
-            name,
-            path,
+            name: full_path
+                .file_name()
+                .and_then(|os_str| os_str.to_str())
+                .map(ToString::to_string)
+                .unwrap_or_else(|| "Invalid full-path".into()),
+            path: full_path,
             depth: depth.to_owned(),
             file_type,
-            size,
+            size: metadata.len(),
         }
     }
 
@@ -41,9 +44,7 @@ impl ItemCollector {
             self.process_file(walk);
         }
 
-        if let Some(size) = self.size {
-            walk.total.size += size;
-        }
+        walk.total.size += self.size;
     }
 
     // TODO: 'process_dir' and 'process_file' should be a trait?
@@ -61,7 +62,7 @@ impl ItemCollector {
 
         // -----------------------------
         // (INFO) this is a recursive traversale to display the tree structure
-        WalkDir::new(walk.tree, &self.path, walk.std_out, walk.total, walk.result_tree).walk();
+        WalkDir::new(walk.tree, &self.path, walk.std_out, walk.total).walk();
         // -----------------------------
 
         // Subtract 1 as we fall back from DFS
